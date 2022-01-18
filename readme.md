@@ -12,7 +12,7 @@ Assigned --> Resolved : Resolve
 Assigned --> Terminated : Terminate
 Terminated --> Assigned : Assign
 ```
-In case github support for `mermaid` is still pending, the above diagram should render as ![mermaid diagram](mermaid.png)
+In case github support for `mermaid` is still pending, the above diagram should render as ![mermaid diagram](mermaid.PNG)
 
 Workflows are essentially graphs with each edge representing one allowed state transition. This is apparent when we look at the mermaid code for the diagram above. It is simply a collection of the state transitions specified as `source state` --> `destination state` : `trigger`. 
 ```
