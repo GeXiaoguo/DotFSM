@@ -46,7 +46,7 @@ public static class IssueWorkflowService
         var transition = issue.Workflow.GetTransition(issue.CurrentWorkflowState, trigger);
         if (transition == null)
         {
-            throw new IssueWorkflowException($"{trigger} is not allowed for {issue}");
+            throw new IssueWorkflowException($"{trigger} is not allowed for {issue.CurrentWorkflowState}");
         }
         return issue with { CurrentWorkflowState = transition.DestinationState };
     }
