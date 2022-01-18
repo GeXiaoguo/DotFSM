@@ -6,11 +6,12 @@ var issue = new Issue()
     Workflow = WorkflowDefinitions.ComplexWorkflow
 };
 
+Console.WriteLine(" --- Current workflow definition ---");
+Console.WriteLine(issue.Workflow.ToMermaidDiagram());
+Console.WriteLine("------------------------------------");
+
 while (true) 
 {
-    Console.WriteLine(" --- Current workflow definition ---");
-    Console.WriteLine(issue.Workflow.ToMermaidDiagram());
-    Console.WriteLine("------------------------------------");
     Console.WriteLine($"Current state: {issue.CurrentWorkflowState}");
     Console.WriteLine($"Commands allowed:  Exit, {string.Join(",", issue.Workflow.AllowedTriggers(issue.CurrentWorkflowState))}");
     var line = Console.ReadLine();
