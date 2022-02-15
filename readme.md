@@ -48,7 +48,7 @@ Builder<State, Trigger>
     .Build();
 ```
 
-Once a state machine is defined, exercising it is as simple as firing triggers into the state machine and getting either a `DotFSM.Transition` back if the trigger is allowed or `null` if it is not permitted.
+**Exercising the state machine is simply a search of the matching edge in the graph**. If a transition is permitted, the search function returns a `DotFSM.Transition`, or otherwise a `null` value.
 ```
     var transition = EvaluateWorkflow(workflowDefinition, issue.CurrentWorkflowState, trigger);
     if (transition == null)
