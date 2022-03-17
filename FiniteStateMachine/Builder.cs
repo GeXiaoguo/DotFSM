@@ -1,8 +1,7 @@
-﻿namespace DotFSM;
+﻿using System;
+using System.Collections.Generic;
 
-using global::System;
-using global::System.Collections.Generic;
-
+namespace DotFSM;
 public class Builder<StateT, TriggerT>
         where StateT : IComparable
         where TriggerT : IComparable
@@ -22,11 +21,11 @@ public class Builder<StateT, TriggerT>
     public Builder<StateT, TriggerT> Allow(TriggerT trigger, StateT destState)
     {
         _transitions.Add(new Transition<StateT, TriggerT>
-        {
-            SourceState = state,
-            Trigger = trigger,
-            DestinationState = destState,
-        });
+        (
+            SourceState: state,
+            Trigger: trigger,
+            DestinationState: destState
+        ));
         return this;
     }
     public DotFSM<StateT, TriggerT> Build() => new DotFSM<StateT, TriggerT>(_transitions);

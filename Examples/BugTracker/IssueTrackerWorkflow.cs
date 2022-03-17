@@ -12,12 +12,12 @@ public static class WorkflowDefinitions
 {
     public static readonly DotFSM<State, Trigger> ComplexWorkflow = new DotFSM<State, Trigger>(new Transition<State, Trigger>[]
     {
-            new () {SourceState = State.Null       ,Trigger = Trigger.Create    , DestinationState = State.Created     },
-            new () {SourceState = State.Created    ,Trigger = Trigger.Assign    , DestinationState = State.Assigned    },
-            new () {SourceState = State.Created    ,Trigger = Trigger.Terminate , DestinationState = State.Terminated  },
-            new () {SourceState = State.Assigned   ,Trigger = Trigger.Resolve   , DestinationState = State.Resolved    },
-            new () {SourceState = State.Assigned   ,Trigger = Trigger.Terminate , DestinationState = State.Terminated  },
-            new () {SourceState = State.Terminated ,Trigger = Trigger.Assign    , DestinationState = State.Assigned    },
+            new (SourceState: State.Null       ,Trigger: Trigger.Create    , DestinationState: State.Created     ),
+            new (SourceState: State.Created    ,Trigger: Trigger.Assign    , DestinationState: State.Assigned    ),
+            new (SourceState: State.Created    ,Trigger: Trigger.Terminate , DestinationState: State.Terminated  ),
+            new (SourceState: State.Assigned   ,Trigger: Trigger.Resolve   , DestinationState: State.Resolved    ),
+            new (SourceState: State.Assigned   ,Trigger: Trigger.Terminate , DestinationState: State.Terminated  ),
+            new (SourceState: State.Terminated ,Trigger: Trigger.Assign    , DestinationState: State.Assigned    ),
     });
     public static DotFSM<State, Trigger> SimpleWorkflow() =>
         Builder<State, Trigger>

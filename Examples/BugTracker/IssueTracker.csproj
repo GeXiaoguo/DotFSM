@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\FiniteStateMachine\DotFSM.csproj" />
     <ProjectReference Include="..\FiniteStateMachine\DotFSM.csproj" />
   </ItemGroup>
 

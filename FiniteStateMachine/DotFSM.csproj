@@ -13,10 +13,11 @@
 		<Company />
 		<PackageProjectUrl>https://github.com/GeXiaoguo/DotFSM</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/GeXiaoguo/DotFSM</RepositoryUrl>
-		<PackageVersion>1.0.0</PackageVersion>
+		<PackageVersion>1.0.1</PackageVersion>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -31,6 +32,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<None Include="..\readme.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 </Project>
