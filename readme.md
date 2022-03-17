@@ -91,7 +91,7 @@ Assigned --> Terminated : Terminate
 Terminated --> Assigned : Assign
 ```
 
-When the allowed `IssueTrigger` is governed by both the `IssueWorkflow` and the `ProjectIssueWorkflow`. Then the two workflows can be composed into a single workflow.
+When the allowed `IssueTrigger` is governed by both the `IssueWorkflow` and the `ProjectIssueWorkflow`. Then the two workflows can be composed into a single one.
 ```
   var workflow = ProjectIssueWorkflow.Combine(IssueWorkflow);
 ```
@@ -112,13 +112,10 @@ InExecution*Assigned --> InExecution*Resolved : Resolve
 
 ```
 
-The new workflow can then be exercised as to any other `DotFSM` instances.
+The new workflow can then be exercised as to any other `DotFSM` instances, with `currentState` being type `(ProejctState, IssueState)`
 ```
 var transition = workflow.GetTransition(currentState, trigger)
 ```
-with `currentState` being type `(ProejctState, IssueState)`
-
-
 
 **A complete console application** that moves both the project and issue between states according the workflow defininitions above can be as simple as the code below
 ```
