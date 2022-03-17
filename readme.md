@@ -22,7 +22,7 @@ Assigned --> Terminated : Terminate
 Terminated --> Assigned : Assign
 ```
 
-**DotFSM allows you to define `Finite State Machines` as a collection of state transitions.** For example, the above state machine can be defined like below
+**DotFSM allows defining `Finite State Machines` as a collection of state transitions.** For example, the above state machine can be defined like below
 ```
 new DotFSM<State, Trigger>(new Transition<State, Trigger>[]
 {
@@ -58,44 +58,61 @@ Builder<State, Trigger>
     return issue with { CurrentWorkflowState = transition.DestinationState };
 ```
 
-**A complete console application** that moves issues between states according to the workflow diagram above can be as simple as below
+**Workflows may need to be composed in real world applications**. Suppose the issue tracking application also need to deal with projects. And the project follows the workflow below
+```mermaid
+stateDiagram-v2
+direction LR
+Created --> InPlanning : Plan
+InPlanning --> InExecution : Start
+InExecution --> Closed : Close
+Closed --> InPlanning : ReOpen
+InPlanning --> Parked: Park
+Parked --> InPlanning : ReOpen
 ```
-using IssueTracker;
+In addition, actions to the issues are only allowed in certain project states. For example, `InPlanning` state allows `Create` and `Terminate` an issue. And `InExecution` state allows `Assign`, `Terminate`, and `Resolve` an issue. The workflow is illusated below
+```mermaid
+stateDiagram-v2
+direction LR
+InPlanning --> InPlanning : IssueTrigger.Create
+InPlanning --> InPlanning : IssueTrigger.Terminate
+InExecution --> InExecution : IssueTrigger.Assign
+InExecution --> InExecution : IssueTrigger.Terminate
+InExecution --> InExecution : IssueTrigger.Resolve
+```
+Suppose the first workflow is defined in C# as `IssueWorkflow` and the second one as `ProjectIssueWorkflow`. The `IssueTrigger` needs to follow both. This can be done as a combination of the two as below.
+```
+  var workflow = ProjectIssueWorkflow.Combine(IssueWorkflow);
+```
+The new workflow can then be exercised as to any other `DotFSM` instances.
+```
+var transition = workflow.GetTransition(currentState, trigger)
+```
+with `currentState` being type `(ProejctState, IssueState)`
 
-var issue = new Issue()
+
+
+**A complete console application** that moves both the project and issue between states according the workflow defininitions above can be as simple as the code below
+```
+var (context, command) = ParseCommand(line);
+switch (context)
 {
-    Workflow = WorkflowDefinitions.ComplexWorkflow
-};
-
-Console.WriteLine(" --- Current workflow definition ---");
-Console.WriteLine(issue.Workflow.ToMermaidDiagram());
-Console.WriteLine("------------------------------------");
-
-while (true) 
-{
-    Console.WriteLine($"Current state: {issue.CurrentWorkflowState}");
-    Console.WriteLine($"Commands allowed:  Exit, {string.Join(",", issue.Workflow.AllowedTriggers(issue.CurrentWorkflowState))}");
-    var line = Console.ReadLine();
-    if ("exit".Equals(line, StringComparison.OrdinalIgnoreCase))
-    {
-        return;
-    }
-
-    var trigger = line.ToEnum<Trigger>();
-    if (trigger == null) 
-    {
-        Console.WriteLine($"unknown command {line}");
-        continue;
-    }
-
-    try
-    {
-        var updatedIssue = IssueWorkflowService.FireTrigger(issue, trigger.Value);
-        issue = updatedIssue;
-    }
-    catch (IssueWorkflowException e)
-    {
-        Console.WriteLine(e.Message);
-    }
-}
+    case "project":
+        {
+            var trigger = command.ToEnum<ProjectTrigger>() ?? throw new CommandLineParsingException($"unknown command {command}");
+            var updatedProject = ProjectWorkflowService.FireTrigger(_project, trigger);
+            _project = updatedProject;
+            break;
+        }
+    case "issue":
+        {
+            var trigger = command.ToEnum<IssueTrigger>() ?? throw new CommandLineParsingException($"unknown command {command}");
+            var updatedProject = IssueWorkflowService.FireTrigger(_project, trigger);
+            _project = updatedProject;
+            break;
+        }
+    default:
+        {
+            throw new CommandLineParsingException($"Invalid context {context}. Only 'Proejct' and 'Issue' are valid");
+        }
+} 
 ```

@@ -2,38 +2,68 @@
 using DotFSM;
 using IssueTracker;
 
-var issue = new Issue()
+var _project = new Project(WorkflowDefinition: WorkflowDefinitions.ProjectWorkflow);
+
+(ProjectState, IssueState) CurrentState(Project project) => (project.CurrentWorkflowState, project.Issue?.CurrentWorkflowState?? IssueState.Null);
+(string context, string command) ParseCommand(string? cmdLine)
 {
-    Workflow = WorkflowDefinitions.ComplexWorkflow
-};
-
-Console.WriteLine(" --- Current workflow definition ---");
-Console.WriteLine(issue.Workflow.ToMermaidDiagram());
-Console.WriteLine("------------------------------------");
-
+    var array = cmdLine?.Split(" ").ToArray();
+    if (array?.Length != 2)
+    {
+        throw new CommandLineParsingException($"Invalid command: {cmdLine}");
+    }
+    return (array[1], array[0]);
+}
 while (true) 
 {
-    Console.WriteLine($"Current state: {issue.CurrentWorkflowState}");
-    Console.WriteLine($"Commands allowed:  Exit, {string.Join(",", issue.Workflow.AllowedTriggers(issue.CurrentWorkflowState))}");
-    var line = Console.ReadLine();
-    if ("exit".Equals(line, StringComparison.OrdinalIgnoreCase))
+    var currentState  = CurrentState(_project);
+
+    var allowedIssueCommands = Issue.WorkflowDefinition
+        .AllowedTriggers(currentState)
+        .Select(x => $"{x} Issue");
+
+    var allowedProjectCommands = _project
+        .WorkflowDefinition
+        .AllowedTriggers(_project.CurrentWorkflowState)
+        .Select(x => $"{x} Project");
+
+    Console.WriteLine($"-----------------------------------------------------------------");
+    Console.WriteLine($"Current state: Project: {currentState.Item1}, Issue: {currentState.Item2}");
+    Console.WriteLine($"Issue Commands allowed: \r\n{string.Join("\r\n", allowedIssueCommands)}");
+    Console.WriteLine($"Project Commands allowed: \r\n{string.Join("\r\n", allowedProjectCommands)}");
+
+    var line = Console.ReadLine()?.ToLowerInvariant();
+    if ("exit".Equals(line))
     {
         return;
     }
 
-    var trigger = line.ToEnum<Trigger>();
-    if (trigger == null) 
-    {
-        Console.WriteLine($"unknown command {line}");
-        continue;
-    }
-
     try
     {
-        var updatedIssue = IssueWorkflowService.FireTrigger(issue, trigger.Value);
-        issue = updatedIssue;
+        var (context, command) = ParseCommand(line);
+        switch (context)
+        {
+            case "project":
+                {
+                    var trigger = command.ToEnum<ProjectTrigger>() ?? throw new CommandLineParsingException($"unknown command {command}");
+                    var updatedProject = ProjectWorkflowService.FireTrigger(_project, trigger);
+                    _project = updatedProject;
+                    break;
+                }
+            case "issue":
+                {
+                    var trigger = command.ToEnum<IssueTrigger>() ?? throw new CommandLineParsingException($"unknown command {command}");
+                    var updatedProject = IssueWorkflowService.FireTrigger(_project, trigger);
+                    _project = updatedProject;
+                    break;
+                }
+            default:
+                {
+                    throw new CommandLineParsingException($"Invalid context {context}. Only 'Proejct' and 'Issue' are valid");
+                }
+        } 
     }
-    catch (IssueWorkflowException e)
+    catch (Exception e) when (e is IssueWorkflowException or CommandLineParsingException)
     {
         Console.WriteLine(e.Message);
     }

@@ -2,52 +2,54 @@
 
 using DotFSM;
 
-public enum State { Null = 0, Created, Assigned, Resolved, Terminated }
-public enum Trigger { Create = 0, Assign, Resolve, Terminate }
-public static class EnumExtensions
+public enum ProjectTrigger { Plan, Start, Close, Park, ReOpen }
+public enum ProjectState { Created = 0, Parked, InPlanning, InExecution, Closed }
+public enum IssueState { Null = 0, Created, Assigned, Resolved, Terminated }
+public enum IssueTrigger { Create = 0, Assign, Resolve, Terminate }
+public record Issue()
 {
-    public static T? ToEnum<T>(this string enumName) where T : struct => Enum.TryParse<T>(enumName, out T result) ? result : null;
+    public Guid ID { get; } = Guid.NewGuid();
+    public IssueState CurrentWorkflowState { get; init; } = IssueState.Created;
+    public static readonly DotFSM<(ProjectState, IssueState), IssueTrigger> WorkflowDefinition = WorkflowDefinitions.ProjectIssueWorkflow.Combine(WorkflowDefinitions.IssueWorkflow);
+}
+public record Project(DotFSM<ProjectState, ProjectTrigger> WorkflowDefinition, ProjectState CurrentWorkflowState = ProjectState.Created)
+{
+    public Guid ID { get; } = Guid.NewGuid();
+    public Issue? Issue {get; init;}
 }
 public static class WorkflowDefinitions
 {
-    public static readonly DotFSM<State, Trigger> ComplexWorkflow = new DotFSM<State, Trigger>(new Transition<State, Trigger>[]
+    public static readonly DotFSM<IssueState, IssueTrigger> IssueWorkflow = new DotFSM<IssueState, IssueTrigger>(new Transition<IssueState, IssueTrigger>[]
     {
-            new (SourceState: State.Null       ,Trigger: Trigger.Create    , DestinationState: State.Created     ),
-            new (SourceState: State.Created    ,Trigger: Trigger.Assign    , DestinationState: State.Assigned    ),
-            new (SourceState: State.Created    ,Trigger: Trigger.Terminate , DestinationState: State.Terminated  ),
-            new (SourceState: State.Assigned   ,Trigger: Trigger.Resolve   , DestinationState: State.Resolved    ),
-            new (SourceState: State.Assigned   ,Trigger: Trigger.Terminate , DestinationState: State.Terminated  ),
-            new (SourceState: State.Terminated ,Trigger: Trigger.Assign    , DestinationState: State.Assigned    ),
+            new (SourceState: IssueState.Null       ,Trigger: IssueTrigger.Create    , DestinationState: IssueState.Created     ),
+            new (SourceState: IssueState.Created    ,Trigger: IssueTrigger.Assign    , DestinationState: IssueState.Assigned    ),
+            new (SourceState: IssueState.Created    ,Trigger: IssueTrigger.Terminate , DestinationState: IssueState.Terminated  ),
+            new (SourceState: IssueState.Assigned   ,Trigger: IssueTrigger.Resolve   , DestinationState: IssueState.Resolved    ),
+            new (SourceState: IssueState.Assigned   ,Trigger: IssueTrigger.Terminate , DestinationState: IssueState.Terminated  ),
+            new (SourceState: IssueState.Terminated ,Trigger: IssueTrigger.Assign    , DestinationState: IssueState.Assigned    ),
     });
-    public static DotFSM<State, Trigger> SimpleWorkflow() =>
-        Builder<State, Trigger>
-          .Start(State.Created)
-              .Allow(Trigger.Assign, State.Assigned)
-              .Allow(Trigger.Terminate, State.Terminated)
-          .ForState(State.Assigned)
-              .Allow(Trigger.Resolve, State.Resolved)
-              .Allow(Trigger.Terminate, State.Terminated)
+    public static DotFSM<ProjectState, ProjectTrigger> ProjectWorkflow
+        => Builder<ProjectState, ProjectTrigger>
+          .Start(ProjectState.Created)
+              .Allow(ProjectTrigger.Plan, ProjectState.InPlanning)
+          .ForState(ProjectState.InPlanning)
+              .Allow(ProjectTrigger.Start, ProjectState.InExecution)
+              .Allow(ProjectTrigger.Park, ProjectState.Parked)
+          .ForState(ProjectState.Parked)
+              .Allow(ProjectTrigger.ReOpen, ProjectState.InPlanning)
+          .ForState(ProjectState.InExecution)
+              .Allow(ProjectTrigger.Close, ProjectState.Closed)
+          .ForState(ProjectState.Closed)
+              .Allow(ProjectTrigger.ReOpen, ProjectState.InPlanning)
           .Build();
-}
-public record Issue
-{
-    public Guid ID { get; } = Guid.NewGuid();
-    public DotFSM<State, Trigger> Workflow { get; init; } = WorkflowDefinitions.ComplexWorkflow;
-    public string? Title { get; init; }
-    public State CurrentWorkflowState { get; init; } = State.Created;
-}
-public static class IssueWorkflowService
-{
-    public static Issue Assign(Issue issue) => FireTrigger(issue, Trigger.Assign);
-    public static Issue Resolve(Issue issue) => FireTrigger(issue, Trigger.Resolve);
-    public static Issue Terminate(Issue issue) => FireTrigger(issue, Trigger.Terminate);
-    public static Issue FireTrigger(Issue issue, Trigger trigger)
-    {
-        var transition = issue.Workflow.GetTransition(issue.CurrentWorkflowState, trigger);
-        if (transition == null)
-        {
-            throw new IssueWorkflowException($"{trigger} is not allowed for {issue.CurrentWorkflowState}");
-        }
-        return issue with { CurrentWorkflowState = transition.DestinationState };
-    }
+    public static DotFSM<ProjectState, IssueTrigger> ProjectIssueWorkflow
+        => Builder<ProjectState, IssueTrigger>
+          .Start(ProjectState.InPlanning)
+              .Allow(IssueTrigger.Create, ProjectState.InPlanning)
+              .Allow(IssueTrigger.Terminate, ProjectState.InPlanning)
+          .ForState(ProjectState.InExecution)
+              .Allow(IssueTrigger.Assign, ProjectState.InExecution)
+              .Allow(IssueTrigger.Terminate, ProjectState.InExecution)
+              .Allow(IssueTrigger.Resolve, ProjectState.InExecution)
+          .Build();
 }
