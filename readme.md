@@ -58,18 +58,14 @@ Builder<State, Trigger>
     return issue with { CurrentWorkflowState = transition.DestinationState };
 ```
 
-**Workflows may need to be composed in real world applications**. Suppose the issue tracking application also need to deal with projects. And the `ProjectWorkflow` is defined as below.
-```mermaid
-stateDiagram-v2
-direction LR
-Created --> InPlanning : Plan
-InPlanning --> InExecution : Start
-InExecution --> Closed : Close
-Closed --> InPlanning : ReOpen
-InPlanning --> Parked: Park
-Parked --> InPlanning : ReOpen
-```
-And `Project` also governs allowed actions on issues. For example, `InPlanning` state allows `Create` and `Terminate` an issue. And `InExecution` state allows `Assign`, `Terminate`, and `Resolve` an issue. This can be illusated below. Let's call this workflow `ProjectIssueWorkflow`.
+## Workflow composition
+
+**One benefit of representing workflow as data is that multiple workflows can be combined into one**. This allows complex workflows to be broken into smaller and simpler pieces and implemented independently. For example, suppose the issue tracking application also need to deal with projects. And the project has the following statuses: `InPlanning`, `InExecution`, `Closed`, `Parked`. The business rules are listed below: 
+ - `InPlanning` allows `Create` and `Terminate` 
+ - `InExecution` state allows `Assign`, `Terminate`, and `Resolve`
+ - `Parked` and `Closed` do not allow any action to be done on issues. 
+
+The rules above can be illusated as a simple workflow below. Let's name it the `ProjectIssueWorkflow`.
 ```mermaid
 stateDiagram-v2
 direction LR
@@ -90,15 +86,11 @@ Assigned --> Resolved : Resolve
 Assigned --> Terminated : Terminate
 Terminated --> Assigned : Assign
 ```
-
-When the allowed `IssueTrigger` is governed by both the `IssueWorkflow` and the `ProjectIssueWorkflow`. Then the two workflows can be composed into a single one.
+The two workflows can be combined and exercised at run time like below.
 ```
   var workflow = ProjectIssueWorkflow.Combine(IssueWorkflow);
 ```
-The new composed workflow can be visualized like below.
-```
-  var mermaid = workflow.ToMermaidDiagram();
-```
+Visualizing the combined workflow makes it apparent how complex the real business rules are and how simple it is when the rules are broken into two smaller, independent, and easy to understand workflows `IssueWorkflow` and `ProjectIssueWorkflow`.
 ```mermaid
 stateDiagram-v2
 InPlanning*Null --> InPlanning*Created : Create
@@ -112,12 +104,12 @@ InExecution*Assigned --> InExecution*Resolved : Resolve
 
 ```
 
-The new workflow can then be exercised as to any other `DotFSM` instances, with `currentState` being type `(ProejctState, IssueState)`
+The new workflow can then be exercised like any other `DotFSM` instances, with `currentState` being of type `(ProejctState, IssueState)`.
 ```
 var transition = workflow.GetTransition(currentState, trigger)
 ```
 
-**A complete console application** that moves both the project and issue between states according the workflow defininitions above can be as simple as the code below
+**A complete console application** that moves both the project and issue between states according to the workflow definitions above can be as simple as the code below
 ```
 var (context, command) = ParseCommand(line);
 switch (context)
