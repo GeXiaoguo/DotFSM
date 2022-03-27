@@ -61,9 +61,9 @@ Builder<State, Trigger>
 ## Workflow composition
 
 **One benefit of representing workflow as data is that multiple workflows can be combined into one**. This allows complex workflows to be broken into smaller and simpler pieces and implemented independently. For example, suppose the issue tracking application also need to deal with projects. And the project has the following statuses: `InPlanning`, `InExecution`, `Closed`, `Parked`. The business rules are listed below: 
- - `InPlanning` allows `Create` and `Terminate` 
- - `InExecution` state allows `Assign`, `Terminate`, and `Resolve`
- - `Parked` and `Closed` do not allow any action to be done on issues. 
+ - `InPlanning` projects allow `Create` and `Terminate` issues.
+ - `InExecution` projects allow `Assign`, `Terminate`, and `Resolve` issues
+ - `Parked` and `Closed` projects do not allow any action to be done on issues. 
 
 The rules above can be illusated as a simple workflow below. Let's name it the `ProjectIssueWorkflow`.
 ```mermaid
